@@ -43,5 +43,11 @@ namespace RazorLight
 		/// Setting this to <c>true</c> provides more information in exceptions.
 		/// </summary>
 		public bool? EnableDebugMode { get; set; }
+
+		/// <summary>
+		/// Controls whether RazorLight loads generated dynamic assemblies with symbol bytes.
+		/// When <c>null</c>, RazorLight chooses a platform-safe default (disabled on Linux, enabled otherwise).
+		/// </summary>
+		public bool? LoadDynamicAssemblyWithSymbols { get; set; }
 	}
 }

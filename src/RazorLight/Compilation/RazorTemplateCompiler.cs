@@ -18,6 +18,11 @@ namespace RazorLight.Compilation
 {
 	public class RazorTemplateCompiler : IRazorTemplateCompiler
 	{
+		private static readonly bool DiagnosticsEnabled = string.Equals(
+			Environment.GetEnvironmentVariable("RAZORLIGHT_DIAGNOSTICS"),
+			"1",
+			StringComparison.Ordinal);
+
 		private readonly SemaphoreSlim  _cacheLock = new SemaphoreSlim(1, 1);
 
 		private RazorSourceGenerator _razorSourceGenerator;
@@ -219,13 +224,20 @@ namespace RazorLight.Compilation
 
 		protected virtual async Task<CompiledTemplateDescriptor> CompileAndEmitAsync(RazorLightProjectItem projectItem)
 		{
+			LogDiagnostic($"CompileAndEmitAsync start key='{projectItem?.Key}'");
 			IGeneratedRazorTemplate generatedTemplate = await _razorSourceGenerator.GenerateCodeAsync(projectItem);
+			LogDiagnostic($"CompileAndEmitAsync generated template key='{projectItem?.Key}'");
 			Assembly assembly = _compiler.CompileAndEmit(generatedTemplate);
+			LogDiagnostic($"CompileAndEmitAsync compiler returned assembly key='{projectItem?.Key}' fullName='{assembly?.FullName}'");
 
 			// Anything we compile from source will use Razor 2.1 and so should have the new metadata.
 			var loader = new RazorCompiledItemLoader();
+			LogDiagnostic($"CompileAndEmitAsync about to load compiled items key='{projectItem?.Key}'");
 			var item = loader.LoadItems(assembly).SingleOrDefault();
+			LogDiagnostic($"CompileAndEmitAsync compiled items loaded key='{projectItem?.Key}' hasItem='{item != null}'");
+			LogDiagnostic($"CompileAndEmitAsync about to read template attribute key='{projectItem?.Key}'");
 			var attribute = assembly.GetCustomAttribute<RazorLightTemplateAttribute>();
+			LogDiagnostic($"CompileAndEmitAsync attribute loaded key='{projectItem?.Key}' hasAttribute='{attribute != null}'");
 
 			return new CompiledTemplateDescriptor
 			{
@@ -233,6 +245,16 @@ namespace RazorLight.Compilation
 				TemplateKey = projectItem.Key,
 				TemplateAttribute = attribute
 			};
+		}
+
+		private static void LogDiagnostic(string message)
+		{
+			if (!DiagnosticsEnabled)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"[RazorLightDiag {DateTime.UtcNow:O}] {message}");
 		}
 
 		#region helpers

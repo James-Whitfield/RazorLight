@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -19,16 +20,33 @@ namespace RazorLight.Compilation
 {
 	public class RoslynCompilationService : ICompilationService
 	{
+		private static readonly bool DiagnosticsEnabled = string.Equals(
+			Environment.GetEnvironmentVariable("RAZORLIGHT_DIAGNOSTICS"),
+			"1",
+			StringComparison.Ordinal);
+
+		private static readonly bool LoadWithoutSymbols = string.Equals(
+			Environment.GetEnvironmentVariable("RAZORLIGHT_LOAD_WITHOUT_SYMBOLS"),
+			"1",
+			StringComparison.Ordinal);
+
+		private static readonly bool ForceLoadWithSymbols = string.Equals(
+			Environment.GetEnvironmentVariable("RAZORLIGHT_LOAD_WITH_SYMBOLS"),
+			"1",
+			StringComparison.Ordinal);
+
 		private readonly IMetadataReferenceManager metadataReferenceManager;
 		private readonly bool isDevelopment;
 		private readonly List<MetadataReference> metadataReferences = new List<MetadataReference>();
 		private readonly IPrecompileCallback precompileCallback;
+		private readonly bool loadDynamicAssemblyWithSymbols;
 
-		public RoslynCompilationService(IMetadataReferenceManager referenceManager, Assembly operatingAssembly, IPrecompileCallback precompileCallback = null)
+		public RoslynCompilationService(IMetadataReferenceManager referenceManager, Assembly operatingAssembly, IPrecompileCallback precompileCallback = null, bool? loadDynamicAssemblyWithSymbols = null)
 		{
 			this.metadataReferenceManager = referenceManager ?? throw new ArgumentNullException(nameof(referenceManager));
 			this.OperatingAssembly = operatingAssembly ?? throw new ArgumentNullException(nameof(operatingAssembly));
 			this.precompileCallback = precompileCallback;
+			this.loadDynamicAssemblyWithSymbols = ResolveLoadDynamicAssemblyWithSymbols(loadDynamicAssemblyWithSymbols);
 
 			isDevelopment = AssemblyDebugModeUtility.IsAssemblyDebugBuild(OperatingAssembly);
 			var pdbFormat = SymbolsUtility.SupportsFullPdbGeneration() ?
@@ -39,7 +57,7 @@ namespace RazorLight.Compilation
 		}
 
 		public RoslynCompilationService(IMetadataReferenceManager referenceManager, IOptions<RazorLightOptions> options, IPrecompileCallback precompileCallback = null) :
-			this(referenceManager, options.Value.OperatingAssembly, precompileCallback)
+			this(referenceManager, options.Value.OperatingAssembly, precompileCallback, options.Value.LoadDynamicAssemblyWithSymbols)
 		{
 			
 		}
@@ -100,6 +118,7 @@ namespace RazorLight.Compilation
 			}
 
 			string assemblyName = Path.GetRandomFileName();
+			LogDiagnostic($"CompileAndEmit start assemblyName='{assemblyName}' templateKind='{razorTemplate.GetType().FullName}'");
 			var compilation = CreateCompilation(razorTemplate.GeneratedCode, assemblyName);
 
 			using (var assemblyStream = new MemoryStream())
@@ -143,11 +162,64 @@ namespace RazorLight.Compilation
 
 				var rawAssembly = assemblyStream.ToArray();
 				var rawSymbolStore = pdbStream.ToArray();
+				LogDiagnostic($"CompileAndEmit emit success assemblyName='{assemblyName}' assemblyBytes='{rawAssembly.Length}' pdbBytes='{rawSymbolStore.Length}'");
 				precompileCallback?.Invoke(razorTemplate, rawAssembly, rawSymbolStore);
-				var assembly = Assembly.Load(rawAssembly, rawSymbolStore);
+				LogDiagnostic($"CompileAndEmit about to load assembly assemblyName='{assemblyName}'");
+				Assembly assembly;
+				try
+				{
+					if (!loadDynamicAssemblyWithSymbols)
+					{
+						LogDiagnostic($"CompileAndEmit loading without symbols assemblyName='{assemblyName}'");
+						assembly = Assembly.Load(rawAssembly);
+					}
+					else
+					{
+						assembly = Assembly.Load(rawAssembly, rawSymbolStore);
+					}
+				}
+				catch (Exception ex)
+				{
+					LogDiagnostic($"CompileAndEmit load exception assemblyName='{assemblyName}' type='{ex.GetType().FullName}' message='{ex.Message}'");
+					throw;
+				}
+
+				LogDiagnostic($"CompileAndEmit load success assemblyName='{assembly.FullName}'");
 
 				return assembly;
 			}
+		}
+
+		private static void LogDiagnostic(string message)
+		{
+			if (!DiagnosticsEnabled)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"[RazorLightDiag {DateTime.UtcNow:O}] {message}");
+		}
+
+		private static bool ResolveLoadDynamicAssemblyWithSymbols(bool? optionValue)
+		{
+			if (LoadWithoutSymbols)
+			{
+				return false;
+			}
+
+			if (ForceLoadWithSymbols)
+			{
+				return true;
+			}
+
+			if (optionValue.HasValue)
+			{
+				return optionValue.Value;
+			}
+
+			// Linux runtimes have shown hard crashes in Assembly.Load(byte[], byte[]) for generated templates.
+			// Prefer symbol-free load by default on Linux for stability.
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 		}
 
 		protected internal virtual DependencyContextCompilationOptions GetDependencyContextCompilationOptions()

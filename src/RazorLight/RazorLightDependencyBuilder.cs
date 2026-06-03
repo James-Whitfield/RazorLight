@@ -92,5 +92,11 @@ namespace RazorLight
 			_services.Configure<RazorLightOptions>(x => x.AdditionalMetadataReferences = metadataReferences);
 			return this;
 		}
+
+		public RazorLightDependencyBuilder UseDynamicAssemblySymbols(bool enabled = true)
+		{
+			_services.Configure<RazorLightOptions>(x => x.LoadDynamicAssemblyWithSymbols = enabled);
+			return this;
+		}
 	}
 }

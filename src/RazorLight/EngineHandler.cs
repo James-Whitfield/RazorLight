@@ -12,6 +12,13 @@ namespace RazorLight
 {
 	public class EngineHandler : IEngineHandler
 	{
+		private static readonly bool DiagnosticsEnabled = string.Equals(
+			Environment.GetEnvironmentVariable("RAZORLIGHT_DIAGNOSTICS"),
+			"1",
+			StringComparison.Ordinal);
+
+		private static bool _diagnosticHandlersRegistered;
+
 		public EngineHandler(
 			RazorLightOptions options,
 			IRazorTemplateCompiler compiler,
@@ -23,6 +30,8 @@ namespace RazorLight
 			FactoryProvider = factoryProvider ?? throw new ArgumentNullException(nameof(factoryProvider));
 
 			Cache = cache;
+
+			RegisterDiagnosticHandlers();
 		}
 
 		public EngineHandler(
@@ -49,18 +58,22 @@ namespace RazorLight
 		/// <returns>An instance of a template</returns>
 		public async Task<ITemplatePage> CompileTemplateAsync(string key)
 		{
+			LogDiagnostic($"CompileTemplateAsync start key='{key}'");
+
 			ITemplatePage templatePage = null;
 			if (IsCachingEnabled)
 			{
 				var cacheLookupResult = Cache.RetrieveTemplate(key);
 				if (cacheLookupResult.Success)
 				{
+					LogDiagnostic($"CompileTemplateAsync cache hit key='{key}'");
 					templatePage = cacheLookupResult.Template.TemplatePageFactory();
 				}
 			}
 
 			if(templatePage == null)
 			{
+				LogDiagnostic($"CompileTemplateAsync cache miss key='{key}'");
 				CompiledTemplateDescriptor templateDescriptor = await Compiler.CompileAsync(key);
 				Func<ITemplatePage> templateFactory = FactoryProvider.CreateFactory(templateDescriptor);
 
@@ -75,6 +88,7 @@ namespace RazorLight
 			}
 
 			templatePage.DisableEncoding = Options.DisableEncoding ?? false;
+			LogDiagnostic($"CompileTemplateAsync success key='{key}'");
 			return templatePage;
 		}
 
@@ -137,9 +151,19 @@ namespace RazorLight
 		/// <returns></returns>
 		public async Task<string> CompileRenderAsync<T>(string key, T model, ExpandoObject viewBag = null)
 		{
-			ITemplatePage template = await CompileTemplateAsync(key).ConfigureAwait(false);
-
-			return await RenderTemplateAsync(template, model, viewBag).ConfigureAwait(false);
+			try
+			{
+				LogDiagnostic($"CompileRenderAsync start key='{key}' modelType='{typeof(T).FullName}'");
+				ITemplatePage template = await CompileTemplateAsync(key).ConfigureAwait(false);
+				var output = await RenderTemplateAsync(template, model, viewBag).ConfigureAwait(false);
+				LogDiagnostic($"CompileRenderAsync success key='{key}' outputLength='{output?.Length ?? 0}'");
+				return output;
+			}
+			catch (Exception ex)
+			{
+				LogDiagnostic($"CompileRenderAsync exception key='{key}' type='{ex.GetType().FullName}' message='{ex.Message}'");
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -197,6 +221,36 @@ namespace RazorLight
 			}
 
 			templatePage.PageContext = pageContext;
+		}
+
+		private static void RegisterDiagnosticHandlers()
+		{
+			if (!DiagnosticsEnabled || _diagnosticHandlersRegistered)
+			{
+				return;
+			}
+
+			_diagnosticHandlersRegistered = true;
+
+			AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+			{
+				LogDiagnostic($"UnhandledException isTerminating='{args.IsTerminating}' exception='{args.ExceptionObject}'");
+			};
+
+			TaskScheduler.UnobservedTaskException += (_, args) =>
+			{
+				LogDiagnostic($"UnobservedTaskException exception='{args.Exception}'");
+			};
+		}
+
+		private static void LogDiagnostic(string message)
+		{
+			if (!DiagnosticsEnabled)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"[RazorLightDiag {DateTime.UtcNow:O}] {message}");
 		}
 	}
 }

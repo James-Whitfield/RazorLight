@@ -32,6 +32,8 @@ namespace RazorLight
 
 		private bool? enableDebugMode;
 
+		private bool? loadDynamicAssemblyWithSymbols;
+
 		private RazorLightOptions options;
 
 
@@ -273,6 +275,16 @@ namespace RazorLight
 			return this;
 		}
 
+		/// <summary>
+		/// Controls whether generated dynamic assemblies are loaded with symbol bytes.
+		/// Use <c>false</c> to avoid symbol-stream load issues on some runtimes.
+		/// </summary>
+		public virtual RazorLightEngineBuilder UseDynamicAssemblySymbols(bool enabled = true)
+		{
+			this.loadDynamicAssemblyWithSymbols = enabled;
+			return this;
+		}
+
 		public virtual RazorLightEngine Build()
 		{
 			options = options ?? new RazorLightOptions();
@@ -348,9 +360,18 @@ namespace RazorLight
 				options.EnableDebugMode = options.EnableDebugMode ?? enableDebugMode ?? false;
 			}
 
+			if (loadDynamicAssemblyWithSymbols.HasValue && options.LoadDynamicAssemblyWithSymbols.HasValue)
+			{
+				ThrowIfHasBeenSetExplicitly(nameof(loadDynamicAssemblyWithSymbols));
+			}
+			else
+			{
+				options.LoadDynamicAssemblyWithSymbols = options.LoadDynamicAssemblyWithSymbols ?? loadDynamicAssemblyWithSymbols;
+			}
+
 			var metadataReferenceManager = new DefaultMetadataReferenceManager(options.AdditionalMetadataReferences, options.ExcludedAssemblies);
 			var assembly = operatingAssembly ?? Assembly.GetEntryAssembly();
-			var compiler = new RoslynCompilationService(metadataReferenceManager, assembly, cachingProvider as IPrecompileCallback);
+			var compiler = new RoslynCompilationService(metadataReferenceManager, assembly, cachingProvider as IPrecompileCallback, options.LoadDynamicAssemblyWithSymbols);
 
 			var sourceGenerator = new RazorSourceGenerator(DefaultRazorEngine.Instance, project, options.Namespaces);
 			var templateCompiler = new RazorTemplateCompiler(sourceGenerator, compiler, project, options);
