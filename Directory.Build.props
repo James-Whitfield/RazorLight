@@ -3,10 +3,10 @@
     <Deterministic>true</Deterministic>    
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 
-    <PackageIconUrl>https://raw.githubusercontent.com/jcamp-code/RazorLight/main/assets/razorlight_logo_64x64.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/jcamp-code/RazorLight</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/James-Whitfield/RazorLight/main/assets/razorlight_logo_64x64.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/James-Whitfield/RazorLight</PackageProjectUrl>
 
-    <RepositoryUrl>https://github.com/jcamp-code/RazorLight</RepositoryUrl>
+    <RepositoryUrl>https://github.com/James-Whitfield/RazorLight</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

@@ -248,10 +248,8 @@ namespace RazorLight.Compilation
 				{
 					parseOptions = parseOptions.WithLanguageVersion(languageVersion);
 				}
-				else
-				{
-					Debug.Fail($"LanguageVersion {dependencyContextOptions.LanguageVersion} specified in the deps file could not be parsed.");
-				}
+				// Newer SDKs may emit language versions unknown to the bundled Roslyn package.
+				// Fall back to the parser default instead of failing in Debug builds.
 			}
 
 			return parseOptions;
