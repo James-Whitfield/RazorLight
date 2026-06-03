@@ -59,7 +59,7 @@ namespace RazorLight.Compilation
 		public RoslynCompilationService(IMetadataReferenceManager referenceManager, IOptions<RazorLightOptions> options, IPrecompileCallback precompileCallback = null) :
 			this(referenceManager, options.Value.OperatingAssembly, precompileCallback, options.Value.LoadDynamicAssemblyWithSymbols)
 		{
-			
+
 		}
 
 		#region Options
@@ -139,7 +139,7 @@ namespace RazorLight.Compilation
 					builder.AppendLine("Failed to compile generated Razor template:");
 
 					var compilationDiagnostics = new List<TemplateCompilationDiagnostic>();
-					
+
 					foreach (Diagnostic diagnostic in errorsDiagnostics)
 					{
 						FileLinePositionSpan lineSpan = diagnostic.Location.SourceTree.GetMappedLineSpan(diagnostic.Location.SourceSpan);
@@ -154,7 +154,7 @@ namespace RazorLight.Compilation
 
 					builder.AppendLine("\nSee CompilationErrors for detailed information");
 
-					throw new TemplateCompilationException(builder.ToString(),compilationDiagnostics);
+					throw new TemplateCompilationException(builder.ToString(), compilationDiagnostics);
 				}
 
 				assemblyStream.Seek(0, SeekOrigin.Begin);

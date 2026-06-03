@@ -292,15 +292,15 @@ namespace RazorLight
 
 			if (namespaces != null)
 			{
-				if(namespaces.Count > 0 && options.Namespaces.Count > 0)
+				if (namespaces.Count > 0 && options.Namespaces.Count > 0)
 					ThrowIfHasBeenSetExplicitly(nameof(namespaces));
-				
+
 				options.Namespaces = namespaces;
 			}
 
 			if (dynamicTemplates != null)
 			{
-				if(dynamicTemplates.Count > 0 && options.DynamicTemplates.Count > 0)
+				if (dynamicTemplates.Count > 0 && options.DynamicTemplates.Count > 0)
 					ThrowIfHasBeenSetExplicitly(nameof(dynamicTemplates));
 
 				options.DynamicTemplates = dynamicTemplates;
@@ -316,7 +316,7 @@ namespace RazorLight
 
 			if (excludedAssemblies != null)
 			{
-				if(excludedAssemblies.Count > 0 && options.ExcludedAssemblies.Count > 0)
+				if (excludedAssemblies.Count > 0 && options.ExcludedAssemblies.Count > 0)
 					ThrowIfHasBeenSetExplicitly(nameof(excludedAssemblies));
 
 				options.ExcludedAssemblies = excludedAssemblies;
@@ -324,7 +324,7 @@ namespace RazorLight
 
 			if (prerenderCallbacks != null)
 			{
-				if(prerenderCallbacks.Count > 0 && options.PreRenderCallbacks.Count > 0)
+				if (prerenderCallbacks.Count > 0 && options.PreRenderCallbacks.Count > 0)
 					ThrowIfHasBeenSetExplicitly(nameof(prerenderCallbacks));
 
 				options.PreRenderCallbacks = prerenderCallbacks;
@@ -332,7 +332,7 @@ namespace RazorLight
 
 			if (cachingProvider != null)
 			{
-				if(options.CachingProvider != null)
+				if (options.CachingProvider != null)
 					ThrowIfHasBeenSetExplicitly(nameof(cachingProvider));
 
 				options.CachingProvider = cachingProvider;
@@ -340,7 +340,7 @@ namespace RazorLight
 
 			if (disableEncoding.HasValue)
 			{
-				if(options.DisableEncoding != null)
+				if (options.DisableEncoding != null)
 					ThrowIfHasBeenSetExplicitly(nameof(disableEncoding));
 
 				options.DisableEncoding = options.DisableEncoding ?? disableEncoding ?? false;

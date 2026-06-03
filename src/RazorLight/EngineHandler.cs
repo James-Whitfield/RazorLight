@@ -40,7 +40,7 @@ namespace RazorLight
 			ITemplateFactoryProvider factoryProvider,
 			ICachingProvider cache) : this(options.Value, compiler, factoryProvider, cache)
 		{
-			
+
 
 		}
 
@@ -71,13 +71,14 @@ namespace RazorLight
 				}
 			}
 
-			if(templatePage == null)
+			if (templatePage == null)
 			{
 				LogDiagnostic($"CompileTemplateAsync cache miss key='{key}'");
 				CompiledTemplateDescriptor templateDescriptor = await Compiler.CompileAsync(key);
 				Func<ITemplatePage> templateFactory = FactoryProvider.CreateFactory(templateDescriptor);
 
-				if(IsCachingEnabled) {
+				if (IsCachingEnabled)
+				{
 					Cache.CacheTemplate(
 					key,
 					templateFactory,

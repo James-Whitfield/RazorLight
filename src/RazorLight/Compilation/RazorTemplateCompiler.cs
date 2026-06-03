@@ -23,7 +23,7 @@ namespace RazorLight.Compilation
 			"1",
 			StringComparison.Ordinal);
 
-		private readonly SemaphoreSlim  _cacheLock = new SemaphoreSlim(1, 1);
+		private readonly SemaphoreSlim _cacheLock = new SemaphoreSlim(1, 1);
 
 		private RazorSourceGenerator _razorSourceGenerator;
 		private ICompilationService _compiler;
@@ -102,7 +102,7 @@ namespace RazorLight.Compilation
 		/// <summary>
 		/// For testing purposes only.
 		/// </summary>
-		internal Type ProjectType =>  _razorProject.GetType();
+		internal Type ProjectType => _razorProject.GetType();
 
 		private async Task<CompiledTemplateDescriptor> OnCacheMissAsync(string templateKey)
 		{
@@ -286,7 +286,7 @@ namespace RazorLight.Compilation
 		internal async Task<TemplateNotFoundException> CreateTemplateNotFoundException(RazorLightProjectItem projectItem)
 		{
 			var msg = $"{nameof(RazorLightProjectItem)} of type {projectItem.GetType().FullName} with key {projectItem.Key} could not be found by the " +
-				$"{ nameof(RazorLightProject)} of type { _razorProject.GetType().FullName} and does not exist in dynamic templates. ";
+				$"{nameof(RazorLightProject)} of type {_razorProject.GetType().FullName} and does not exist in dynamic templates. ";
 
 			var propNames = $"\"{nameof(TemplateNotFoundException.KnownDynamicTemplateKeys)}\" and \"{nameof(TemplateNotFoundException.KnownProjectTemplateKeys)}\"";
 
